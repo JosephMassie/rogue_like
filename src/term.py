@@ -8,19 +8,22 @@ DEFAULT_BG_COLOR = pygame.Color(50, 50, 50)
 DEFAULT_FG_COLOR = pygame.Color(255, 255, 255)
 BLANK_CELL = " "
 
-class TermContent(TypedDict):
-    chars: Required[list[list[str]]]
-    colors: NotRequired[list[list[tuple[pygame.Color, pygame.Color]]]]
+type TermCharBuff = list[list[str]]
+type TermColorBuff = list[list[tuple[pygame.Color, pygame.Color]]]
 
-def _get_element_width(elem: TermContent) -> int:
+class TermContent(TypedDict):
+    chars: Required[TermCharBuff]
+    colors: NotRequired[TermColorBuff]
+
+def get_char_buff_width(buffer: TermCharBuff) -> int:
     greatest_width = 0
-    for row in elem["chars"]:
+    for row in buffer:
         width = len("".join(row))
         if width > greatest_width:
             greatest_width = width
     return greatest_width
 
-def _get_clean_chars_from_content(elem: TermContent) -> TermContent:
+def get_clean_buffer_from_content(elem: TermContent) -> TermContent:
     chars = elem["chars"].copy()
     for i in range(len(elem["chars"])):
         old_row = elem["chars"][i]
@@ -39,7 +42,7 @@ class TermSprite():
     def fillColor(self, color: pygame.Color, bgcolor: pygame.Color = DEFAULT_BG_COLOR):
         chars = self.content["chars"]
         height = len(chars)
-        width = _get_element_width(self.content)
+        width = get_char_buff_width(self.content["chars"])
         colors = [[(bgcolor, color) for _ in range(width)] for _ in range(height)]
         self.content["colors"] = colors
 
@@ -79,36 +82,46 @@ class Terminal():
 
         print(f"creating a terminal display of [{self._screen_width},{self._screen_height}]")
         self._screen = pygame.display.set_mode((self._screen_width, self._screen_height))
+    
+    def get_width(self) -> int:
+        return self._width
+    def get_height(self) -> int:
+        return self._height
 
     def clear_buffer(self) -> None:
-        self._content = [[BLANK_CELL for _ in range(self._width)] for _ in range(self._height)]
+        self._content: TermCharBuff = [[BLANK_CELL for _ in range(self._width)] for _ in range(self._height)]
         self._content_color = [[(self._bg_color, self._default_color) for _ in range(self._width)] for _ in range(self._height)]
         
 
     def draw_element(self, elem: TermContent, x: int, y: int) -> None:
         if x < 0 or x >= self._width or y < 0 or y >= self._height:
-            raise ValueError("can't draw element out of range, invalid coords")
+            #print(f"can't draw element out of range, invalid coords [{x},{y}]")
+            return
         
-        chars = _get_clean_chars_from_content(elem)
+        chars = get_clean_buffer_from_content(elem)
         height = len(chars)
-        width = _get_element_width(elem)
-        if x + width - 1 >= self._width or y + height - 1 >= self._height:
-            raise ValueError("can't draw element out of range, too big")
+        width = get_char_buff_width(elem["chars"])
 
         for yy in range(height):
-            for xx in range(width):
-                self._content[y + yy][x + xx] = chars[yy][xx]
+            if yy < self._height:
+                for xx in range(len(chars[yy])):
+                    if xx < self._width:
+                        self._content[y + yy][x + xx] = chars[yy][xx]
         
         if "colors" in elem:
             colors = elem["colors"]
             for yy in range(len(colors)):
-                row = colors[yy]
-                for xx in range(len(row)):
-                    self._content_color[y + yy][x + xx] = row[xx]
+                if yy < self._height:
+                    row = colors[yy]
+                    for xx in range(len(row)):
+                        if xx < self._width:
+                            self._content_color[y + yy][x + xx] = row[xx]
         else:
             for yy in range(height):
-                for xx in range(width):
-                    self._content_color[y + yy][x + xx] = (self._bg_color, self._default_color)
+                if yy < self._height:
+                    for xx in range(width):
+                        if xx < self._width:
+                            self._content_color[y + yy][x + xx] = (self._bg_color, self._default_color)
     
     def draw_term_sprite(self, spr: TermSprite) -> None:
         self.draw_element(spr.content, spr.x, spr.y)
@@ -117,15 +130,15 @@ class Terminal():
     def update(self) -> None:
         self._screen.fill(self._bg_color)
         
-        r = pygame.Rect(self._screen_width-self._gap, self._gap, self._gap, self._screen_height - self._gap*2)
+        ## Borders to draw for debugging
+        """ r = pygame.Rect(self._screen_width-self._gap, self._gap, self._gap, self._screen_height - self._gap*2)
         r2 = pygame.Rect(self._gap, 0, self._screen_width-self._gap*2, self._gap)
         r3 = pygame.Rect(0, self._gap, self._gap, self._screen_height-self._gap*2)
         r4 = pygame.Rect(self._gap, self._screen_height-self._gap, self._screen_width-self._gap*2, self._gap)
-        
-        #pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r)
-        #pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r2)
-        #pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r3)
-        #pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r4)
+        pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r)
+        pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r2)
+        pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r3)
+        pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r4) """
 
         for y in range(len(self._content)):
             line = self._content[y]
