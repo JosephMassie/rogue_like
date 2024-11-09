@@ -15,9 +15,23 @@ def main():
     WIDTH = 40
     HEIGHT = 20
     terminal = Terminal(WIDTH, HEIGHT, 24)
-    e1 = TermSprite([["gyTl"]], 1, 1)
 
-    player = TermSprite([["@"]], 0, 0)
+    econ: TermContent = {
+        "chars": [list("gyT1")]
+    }
+    e1 = TermSprite(econ, 1, 1)
+    e1.fillColor(pygame.Color(10, 0, 10), pygame.Color(0, 150, 150))
+
+    pcon: TermContent = {
+        "chars": [["@"]],
+        "colors": [[(terminal._bg_color, pygame.Color(0, 100, 0))]]
+    }
+    player = TermSprite(pcon, 0, 0)
+    bg_test: TermContent = {
+        "chars": [["#" for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    }
+    bg_test_sprite = TermSprite(bg_test, 0, 0)
+    bg_test_sprite.fillColor(pygame.Color(100, 0, 0), pygame.Color(150, 150, 150))
 
     while True:
         for event in pygame.event.get():
@@ -46,13 +60,12 @@ def main():
             player.y = HEIGHT - 1
 
         terminal.clear_buffer()
+        terminal.draw_term_sprite(bg_test_sprite)
         terminal.draw_term_sprite(e1)
+        terminal.draw_element({ "chars": [['|'], ['|'], ['|'], ['|'], ['|'], ['|']] }, 19, 0)
+        terminal.draw_element({ "chars": [["hello |"]]}, 10, 4)
+        terminal.draw_element({ "chars": [["123456789"]]}, 0, 9)
         terminal.draw_term_sprite(player)
-        terminal.draw_element([['|'], ['|'], ['|'], ['|'], ['|'], ['|']], 19, 0)
-        terminal.draw_element([["hello |"]], 10, 4)
-        terminal.draw_element([["123456789"]], 0, 9)
-        terminal.draw_element([["123456789"]], 0, 10)
-        terminal.draw_element([["123456789"]], 0, 11)
         terminal.update()
 
         CLOCK.tick(MAX_FPS)
