@@ -1,12 +1,10 @@
-import pygame, sys
+import pygame
 from pygame.locals import *
 
 from typing import TypedDict, Required, NotRequired
-from functools import reduce
 
-DEFAULT_BG_COLOR = pygame.Color(50, 50, 50)
-DEFAULT_FG_COLOR = pygame.Color(255, 255, 255)
-BLANK_CELL = " "
+from utils.constants import *
+from utils.int_vect import Int_Vector
 
 type TermCharBuff = list[list[str]]
 type TermColorBuff = list[list[tuple[pygame.Color, pygame.Color]]]
@@ -34,12 +32,22 @@ def get_clean_buffer_from_content(elem: TermContent) -> TermContent:
     return chars
 
 class TermSprite():
-    def __init__(self, content: TermContent, x: int, y: int) -> None:
+    def __init__(self, content: TermContent, position: Int_Vector) -> None:
         self.content = content
-        self.x = x
-        self.y = y
+        self.pos =  position
     
-    def fillColor(self, color: pygame.Color, bgcolor: pygame.Color = DEFAULT_BG_COLOR):
+    def setPosition(self, position: Int_Vector) -> None:
+        self.pos = position
+    
+    def fillContent(self, content: str, width: int = 1, height: int = 1) -> None:
+        self.content["chars"] = [[content for _ in range(width)] for _ in range(height)]
+        # clamp down colors to match fill size
+        if len(self.content["colors"]) != height or get_char_buff_width(self.content) != width:
+            self.content["colors"] = self.content["colors"][:height]
+            for row in self.content["colors"]:
+                new_row = row[:width]
+    
+    def fillColor(self, color: pygame.Color, bgcolor: pygame.Color = DEFAULT_BG_COLOR) -> None:
         chars = self.content["chars"]
         height = len(chars)
         width = get_char_buff_width(self.content["chars"])
@@ -69,15 +77,13 @@ class Terminal():
 
         self._printer = pygame.font.Font("assets/3270NerdFontMono-Regular.ttf", size=font_size)
 
-        self._line_height = self._printer.get_linesize()
-        print(f"line size ? {self._line_height}")
-
         # set initial content to blank spaces
         self.clear_buffer()
         # preform a quick render to get screen width and individual character width
-        surf = self._printer.render("".join(self._content[0]), True, self._default_color, self._bg_color)
-        self._char_width = surf.get_rect().width / width
-        self._screen_width = surf.get_rect().width + gap * 2
+        row_width, self._line_height = self._printer.size("".join(self._content[0]))
+
+        self._char_width = row_width / width
+        self._screen_width = row_width + gap * 2
         self._screen_height = height * self._line_height + gap * 2
 
         print(f"creating a terminal display of [{self._screen_width},{self._screen_height}]")
@@ -124,10 +130,10 @@ class Terminal():
                             self._content_color[y + yy][x + xx] = (self._bg_color, self._default_color)
     
     def draw_term_sprite(self, spr: TermSprite) -> None:
-        self.draw_element(spr.content, spr.x, spr.y)
+        self.draw_element(spr.content, *spr.pos.getCoords())
 
     # clear screen and render newly provided content
-    def update(self) -> None:
+    def render_buffer(self) -> None:
         self._screen.fill(self._bg_color)
         
         ## Borders to draw for debugging
