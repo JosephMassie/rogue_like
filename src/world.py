@@ -1,8 +1,61 @@
-import os
+from __future__ import annotations
 
 from term import *
 from utils.int_vect import Int_Vector
 from utils.input import Keyboard
+
+from enum import *
+
+@unique
+class CellType(Enum):
+    START = auto()
+    EMPTY = auto()
+    WALL = auto()
+    FLOOR = auto()
+    DOOR = auto()
+    TREE = auto()
+
+class Cell():
+    def __init__(self, display_char: str, type: CellType, colors: tuple[pygame.Color, pygame.Color], passable: bool = True) -> None:
+        self._char = display_char
+        self._type = type
+        self._colors = colors
+        self.passable = passable
+    
+    @classmethod
+    def from_character(_, char: str) -> Cell:
+        type: CellType = None
+        colors: tuple[pygame.Color, pygame.Color] = None
+        passable = True
+
+        match char:
+            case "S":
+                char = "."
+                type = CellType.START
+                colors = (pygame.Color("#17161c"), pygame.Color("#39383f"))
+            case ".":
+                type = CellType.FLOOR
+                colors = (pygame.Color("#17161c"), pygame.Color("#39383f"))
+            case "#":
+                type = CellType.WALL
+                colors = (pygame.Color("#e8e0c9"), pygame.Color(100, 0, 0))
+                passable = False
+            case "^":
+                type = CellType.TREE
+                colors = (pygame.Color("#043a0d"), pygame.Color("#05891b"))
+            case "D":
+                type = CellType.DOOR
+                colors = (pygame.Color("#684a33"), pygame.Color("#331d0c"))
+            case " " | "\n":
+                char = " "
+                type = CellType.EMPTY
+                colors = (DEFAULT_BG_COLOR, DEFAULT_FG_COLOR)
+            case _:
+                type = CellType.EMPTY
+                colors = (DEFAULT_BG_COLOR, DEFAULT_FG_COLOR)
+        return Cell(char, type, colors, passable)
+
+type WorldGrid = list[list[Cell]]
 
 class World():
     def __init__(
@@ -13,34 +66,39 @@ class World():
             ) -> None:
         self._term = term
         self._keyboard = keyboard
-        with open(filePath) as file:
-            data = file.read()
-            data = data.splitlines()
-
-            self._grid: TermCharBuff = []
-            for line in data:
-                self._grid.append(list(line))
+        
+        self._build_from_file(filePath)
+        self._height = len(self._grid)
+        self._width = get_2d_grid_width(self._grid)
         self._camera_pos = Int_Vector(0, 0)
     
-    def _cut_to_camera(self) -> TermCharBuff:
-        screen_width = self._term.get_width()
-        screen_height = self._term.get_height()
+    def _build_from_file(self, filePath: str):
+        with open(filePath) as file:
+            data = file.readlines()
 
-        grid: TermCharBuff = []
-        grid_max_height = len(self._grid)
-        grid_max_width = get_char_buff_width(self._grid)
-
-        cam_x, cam_y = self._camera_pos.getCoords()
-        buff_height = cam_y + screen_height
-        if buff_height > grid_max_height:
-            buff_height = grid_max_height
-        buff_width = cam_x + screen_width
-        if buff_width > grid_max_width:
-            buff_width = grid_max_width
-
-        for i in range(cam_y, buff_height):
-            grid.append(self._grid[i][cam_x:buff_width])
-        return grid
+            self._grid: WorldGrid = []
+            for y in range(len(data)):
+                line = data[y]
+                row: list[Cell] = []
+                for x in range(len(line)):
+                    char = line[x]
+                    cell = Cell.from_character(char)
+                    row.append(cell)
+                    if cell._type == CellType.START:
+                        self._player_spawn = Int_Vector(x, y)
+                self._grid.append(row)
+    
+    def get_player_spawn(self) -> Int_Vector:
+        if isinstance(self._player_spawn, Int_Vector):
+            return self._player_spawn
+        else:
+            return Int_Vector(1, 1)
+    
+    def is_passable(self, position: Int_Vector) -> CellType:
+        x, y = position.getCoords()
+        if x < 0 or x >= self._width or y < 0 or y >= self._height:
+            return False
+        return self._grid[y][x].passable
 
     def move_camera(self, direction: Int_Vector) -> None:
         self._camera_pos = self._camera_pos + direction
@@ -64,13 +122,45 @@ class World():
                 delta = Int_Vector(*dir)
                 self.move_camera(delta)
     
-    def render(self) -> None:
-        frame: TermContent = {
-            "chars": self._cut_to_camera()
+    def _grid_to_content_for_camera(self) -> TermContent:
+        screen_width = self._term.get_width()
+        screen_height = self._term.get_height()
+
+        content: TermContent = {
+            "chars": [],
+            "colors": []
         }
-        self._term.draw_element(frame, 0, 0)
+        grid_max_height = len(self._grid)
+        grid_max_width = get_2d_grid_width(self._grid) - 1
+
+        cam_x, cam_y = self._camera_pos.getCoords()
+
+        buff_height = cam_y + screen_height
+        if buff_height > grid_max_height:
+            buff_height = grid_max_height
+        buff_width = cam_x + screen_width
+        if buff_width > grid_max_width:
+            buff_width = grid_max_width
+
+        for y in range(cam_y, buff_height):
+            char_row: list[str] = []
+            color_row: list[tuple[pygame.Color, pygame.Color]] = []
+            for x in range(cam_x, buff_width):
+                cell: Cell = None
+                if x >= len(self._grid[y]):
+                    cell = Cell.from_character(" ")
+                else:
+                    cell = self._grid[y][x]
+                char_row.append(cell._char)
+                color_row.append(cell._colors)
+            content["chars"].append(char_row)
+            content["colors"].append(color_row)
+
+        return content
+    
+    def render(self) -> None:
+        frame = self._grid_to_content_for_camera()
+        self._term.draw_content(frame, 0, 0)
     
     def world_coord_to_screen_cord(self, position: Int_Vector) -> Int_Vector:
-        spos = position - self._camera_pos
-        #print(f"{position} - {self._camera_pos} = {spos}")
-        return spos
+        return position - self._camera_pos

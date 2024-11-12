@@ -14,21 +14,24 @@ class TermContent(TypedDict):
     chars: Required[TermCharBuff]
     colors: NotRequired[TermColorBuff]
 
-def get_char_buff_width(buffer: TermCharBuff) -> int:
+def get_2d_grid_width(buffer: list[list[any]]) -> int:
     greatest_width = 0
     for row in buffer:
-        width = len("".join(row))
+        width = len(row)
         if width > greatest_width:
             greatest_width = width
     return greatest_width
 
-def get_clean_buffer_from_content(elem: TermContent) -> TermContent:
+def get_clean_content(elem: TermContent) -> TermContent:
     chars = elem["chars"].copy()
     for i in range(len(elem["chars"])):
         old_row = elem["chars"][i]
         row = []
         for piece in old_row:
-            row += list(piece)
+            if isinstance(piece, str):
+                row += list(piece)
+            else:
+                row.append(piece)
         chars[i] = row
     return chars
 
@@ -43,7 +46,7 @@ class TermSprite():
     def fillContent(self, content: str, width: int = 1, height: int = 1) -> None:
         self.content["chars"] = [[content for _ in range(width)] for _ in range(height)]
         # clamp down colors to match fill size
-        if len(self.content["colors"]) != height or get_char_buff_width(self.content) != width:
+        if len(self.content["colors"]) != height or get_2d_grid_width(self.content["colors"]) != width:
             self.content["colors"] = self.content["colors"][:height]
             for row in self.content["colors"]:
                 new_row = row[:width]
@@ -51,7 +54,7 @@ class TermSprite():
     def fillColor(self, color: pygame.Color, bgcolor: pygame.Color = DEFAULT_BG_COLOR) -> None:
         chars = self.content["chars"]
         height = len(chars)
-        width = get_char_buff_width(self.content["chars"])
+        width = get_2d_grid_width(self.content["chars"])
         colors = [[(bgcolor, color) for _ in range(width)] for _ in range(height)]
         self.content["colors"] = colors
 
@@ -121,14 +124,14 @@ class Terminal():
             self._content[y][x] = data
             self._content_color[y][x] = color_data
 
-    def draw_element(self, elem: TermContent, x: int, y: int) -> None:
+    def draw_content(self, elem: TermContent, x: int, y: int) -> None:
         if x < 0 or x >= self._width or y < 0 or y >= self._height:
             #print(f"can't draw element out of range, invalid coords [{x},{y}]")
             return
         
-        chars = get_clean_buffer_from_content(elem)
+        chars = get_clean_content(elem)
         height = len(chars)
-        width = get_char_buff_width(elem["chars"])
+        width = get_2d_grid_width(elem["chars"])
 
         for yy in range(height):
             if yy < self._height:
@@ -152,7 +155,7 @@ class Terminal():
                             self._content_color[y + yy][x + xx] = (self._bg_color, self._default_color)
     
     def draw_term_sprite(self, spr: TermSprite) -> None:
-        self.draw_element(spr.content, *spr.pos.getCoords())
+        self.draw_content(spr.content, *spr.pos.getCoords())
 
     # clear screen and render newly provided content
     def render_buffer(self) -> None:

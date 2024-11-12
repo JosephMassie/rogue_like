@@ -29,7 +29,10 @@ class Player():
         self._position = position
     
     def move(self, delta: Int_Vector):
-        self._position = self._position + delta
+        pos = self._position + delta
+        if not self._level.is_passable(pos):
+            return
+        self._position = pos
     
     def update(self) -> None:
         directions = [
