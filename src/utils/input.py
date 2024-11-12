@@ -10,7 +10,7 @@ type KeyStateList = dict[int, KeyState]
 
 class Keyboard():
     def __init__(self) -> None:
-        pygame.key.set_repeat(100)
+        pygame.key.set_repeat(150)
         self._state = dict()
     
     def update(self) -> None:

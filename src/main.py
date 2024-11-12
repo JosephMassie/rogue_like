@@ -16,11 +16,11 @@ def main():
 
     pygame.display.set_caption('Rogue Like')
 
-    terminal = Terminal(WIDTH, HEIGHT, 24)
+    terminal = Terminal(WIDTH, HEIGHT, FONT_SIZE)
     keyboard = Keyboard()
 
     levelOne = World("./assets/level_test.txt", terminal, keyboard)
-    player = Player(Int_Vector(0, 0), terminal, levelOne, keyboard)
+    player = Player(levelOne.get_player_spawn(), terminal, levelOne, keyboard)
 
     e1 = TermSprite({ "chars": [["g"]] }, Int_Vector(10, 10))
     e1.fillColor(pygame.Color(10, 0, 10), pygame.Color(0, 150, 150))
@@ -46,9 +46,9 @@ def main():
         start = levelOne.world_coord_to_screen_cord(player._position)
         end = levelOne.world_coord_to_screen_cord(ecoords)
 
-        terminal.draw_line(start, end, bg_color=pygame.Color(100, 0, 0), fg_color=pygame.Color(0, 0, 0))
+        #terminal.draw_line(start, end, bg_color=pygame.Color(100, 0, 0), fg_color=pygame.Color(0, 0, 0))
 
-        terminal.draw_element(e1.content, *ecoords.getCoords())
+        terminal.draw_content(e1.content, *ecoords.getCoords())
 
         player.render()
 
