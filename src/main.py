@@ -22,7 +22,7 @@ def main():
     levelOne = World("./assets/level_test.txt", terminal, keyboard)
     player = Player(Int_Vector(0, 0), terminal, levelOne, keyboard)
 
-    e1 = TermSprite({ "chars": [["g"]] }, Int_Vector(1, 1))
+    e1 = TermSprite({ "chars": [["g"]] }, Int_Vector(10, 10))
     e1.fillColor(pygame.Color(10, 0, 10), pygame.Color(0, 150, 150))
 
     deltaT = 0
@@ -42,6 +42,12 @@ def main():
         levelOne.render()
 
         ecoords = levelOne.world_coord_to_screen_cord(e1.pos)
+
+        start = levelOne.world_coord_to_screen_cord(player._position)
+        end = levelOne.world_coord_to_screen_cord(ecoords)
+
+        terminal.draw_line(start, end, bg_color=pygame.Color(100, 0, 0), fg_color=pygame.Color(0, 0, 0))
+
         terminal.draw_element(e1.content, *ecoords.getCoords())
 
         player.render()

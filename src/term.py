@@ -1,5 +1,6 @@
 import pygame
 from pygame.locals import *
+import math
 
 from typing import TypedDict, Required, NotRequired
 
@@ -97,7 +98,28 @@ class Terminal():
     def clear_buffer(self) -> None:
         self._content: TermCharBuff = [[BLANK_CELL for _ in range(self._width)] for _ in range(self._height)]
         self._content_color = [[(self._bg_color, self._default_color) for _ in range(self._width)] for _ in range(self._height)]
-        
+    
+    def draw_line(self, start: Int_Vector, end: Int_Vector, char: str = "?", bg_color: pygame.Color = None, fg_color: pygame.Color = None, mark_ends: bool = False):
+        points = start.plot_difference(end)
+
+        if bg_color == None:
+            bg_color = self._bg_color
+        if fg_color == None:
+            fg_color = self._default_color
+
+        color_data = (bg_color, fg_color)
+
+        length = len(points)
+        for i in range(length):
+            x, y = points[i].getCoords()
+            data = char
+            if mark_ends:
+                if i == 0:
+                    data = "$"
+                elif i == length - 1:
+                    data = "^"
+            self._content[y][x] = data
+            self._content_color[y][x] = color_data
 
     def draw_element(self, elem: TermContent, x: int, y: int) -> None:
         if x < 0 or x >= self._width or y < 0 or y >= self._height:
