@@ -13,6 +13,8 @@ class CellType(Enum):
     WALL = auto()
     FLOOR = auto()
     DOOR = auto()
+    WATER = auto()
+    GRASS = auto()
     TREE = auto()
 
 class Cell():
@@ -38,11 +40,19 @@ class Cell():
                 colors = (pygame.Color("#17161c"), pygame.Color("#39383f"))
             case "#":
                 type = CellType.WALL
-                colors = (pygame.Color("#e8e0c9"), pygame.Color(100, 0, 0))
+                colors = (pygame.Color("#4d5f60"), pygame.Color("#273a44"))
                 passable = False
+            case '"':
+                type = CellType.GRASS
+                colors = (pygame.Color("#206d0a"), pygame.Color("#143f08"))
             case "^":
                 type = CellType.TREE
                 colors = (pygame.Color("#043a0d"), pygame.Color("#05891b"))
+                passable = False
+            case "~":
+                type = CellType.WATER
+                colors = (pygame.Color("#083f3c"), pygame.Color("#08263f"))
+                passable = False
             case "D":
                 type = CellType.DOOR
                 colors = (pygame.Color("#684a33"), pygame.Color("#331d0c"))
@@ -51,6 +61,7 @@ class Cell():
                 type = CellType.EMPTY
                 colors = (DEFAULT_BG_COLOR, DEFAULT_FG_COLOR)
             case _:
+                print(f"creating Cell from unknown character '{char}'")
                 type = CellType.EMPTY
                 colors = (DEFAULT_BG_COLOR, DEFAULT_FG_COLOR)
         return Cell(char, type, colors, passable)

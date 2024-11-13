@@ -22,8 +22,7 @@ def main():
     levelOne = World("./assets/level_test.txt", terminal, keyboard)
     player = Player(levelOne.get_player_spawn(), terminal, levelOne, keyboard)
 
-    e1 = TermSprite({ "chars": [["g"]] }, Int_Vector(10, 10))
-    e1.fillColor(pygame.Color(10, 0, 10), pygame.Color(0, 150, 150))
+    e1 = TermSprite.fromSingleChar("g", color=(None, pygame.Color("#ce0808")), position=Int_Vector(10, 10))
 
     deltaT = 0
     while True:
@@ -31,7 +30,11 @@ def main():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
+
         keyboard.update()
+
+        if keyboard.pressed(pygame.K_ESCAPE):
+            pygame.event.post(pygame.event.Event(QUIT))
         
         levelOne.update()
         player.update()
@@ -42,11 +45,6 @@ def main():
         levelOne.render()
 
         ecoords = levelOne.world_coord_to_screen_cord(e1.pos)
-
-        start = levelOne.world_coord_to_screen_cord(player._position)
-        end = levelOne.world_coord_to_screen_cord(ecoords)
-
-        #terminal.draw_line(start, end, bg_color=pygame.Color(100, 0, 0), fg_color=pygame.Color(0, 0, 0))
 
         terminal.draw_content(e1.content, *ecoords.getCoords())
 

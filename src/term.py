@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import pygame
 from pygame.locals import *
-import math
 
 from typing import TypedDict, Required, NotRequired
 
 from utils.constants import *
 from utils.int_vect import Int_Vector
 
+type TermColor = tuple[pygame.Color | None, pygame.Color | None]
 type TermCharBuff = list[list[str]]
-type TermColorBuff = list[list[tuple[pygame.Color, pygame.Color]]]
+type TermColorBuff = list[list[TermColor]]
 
 class TermContent(TypedDict):
     chars: Required[TermCharBuff]
@@ -48,10 +50,21 @@ class TermSprite():
         # clamp down colors to match fill size
         if len(self.content["colors"]) != height or get_2d_grid_width(self.content["colors"]) != width:
             self.content["colors"] = self.content["colors"][:height]
-            for row in self.content["colors"]:
-                new_row = row[:width]
+            for i in range(len(self.content["colors"])):
+                self.content["colors"][i] = self.content["colors"][i][:width]
     
-    def fillColor(self, color: pygame.Color, bgcolor: pygame.Color = DEFAULT_BG_COLOR) -> None:
+    @classmethod
+    def fromSingleChar(cls, char: str, *, color: TermColor = (None, DEFAULT_FG_COLOR), width: int = 1, height: int = 1, position: Int_Vector = Int_Vector(0, 0)) -> TermSprite | None:
+        if len(char) != 1:
+            print(f"[TermSprite] invalid char must be a single character")
+            return None
+        content: TermContent = {
+            "chars": [[char for _ in range(width)] for _ in range(height)],
+            "colors": [[color for _ in range(width)] for _ in range(height)]
+        }
+        return TermSprite(content, position)
+    
+    def fillColor(self, color: pygame.Color, bgcolor: pygame.Color = None) -> None:
         chars = self.content["chars"]
         height = len(chars)
         width = get_2d_grid_width(self.content["chars"])
@@ -143,10 +156,13 @@ class Terminal():
             colors = elem["colors"]
             for yy in range(len(colors)):
                 if yy < self._height:
-                    row = colors[yy]
-                    for xx in range(len(row)):
+                    for xx in range(len(colors[yy])):
                         if xx < self._width:
-                            self._content_color[y + yy][x + xx] = row[xx]
+                            existing_bg, existing_fg = self._content_color[y + yy][x + xx]
+                            new_bg, new_fg = colors[yy][xx]
+                            bg = existing_bg if new_bg == None else new_bg
+                            fg = existing_fg if new_fg == None else new_fg
+                            self._content_color[y + yy][x + xx] = (bg, fg)
         else:
             for yy in range(height):
                 if yy < self._height:

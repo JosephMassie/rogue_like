@@ -9,16 +9,13 @@ from utils.int_vect import Int_Vector
 
 class Player():
     def __init__(self, position: Int_Vector, term: Terminal, level: World, keyboard: Keyboard) -> None:
-        pcon: TermContent = {
-            "chars": [["@"]],
-            "colors": [[(DEFAULT_BG_COLOR, pygame.Color(0, 150, 0))]]
-        }
         self._term = term
         self._level = level
-        self._position = position
         self._keyboard  = keyboard
+
+        self._position = position
         screen_pos = self._level.world_coord_to_screen_cord(position)
-        self._sprite = TermSprite(pcon, screen_pos)
+        self._sprite = TermSprite.fromSingleChar("@", color=(None, pygame.Color(0, 150, 0)), position=screen_pos)
     
     def render(self):
         screen_pos = self._level.world_coord_to_screen_cord(self._position)
