@@ -8,6 +8,7 @@ from utils.constants import *
 from utils.input import Keyboard
 from utils.int_vect import Int_Vector
 from entities.player import Player
+from entities.enemy import Enemy
 
 def main():
     pygame.init();
@@ -22,7 +23,7 @@ def main():
     levelOne = World("./assets/level_test.txt", terminal, keyboard)
     player = Player(levelOne.get_player_spawn(), terminal, levelOne, keyboard)
 
-    e1 = TermSprite.fromSingleChar("g", color=(None, pygame.Color("#ce0808")), position=Int_Vector(10, 10))
+    e1 = Enemy("g", (None, pygame.Color("#ce0808")), Int_Vector(10, 10), terminal, levelOne)
 
     deltaT = 0
     while True:
@@ -37,18 +38,16 @@ def main():
             pygame.event.post(pygame.event.Event(QUIT))
         
         levelOne.update()
-        player.update()
+        playerUpdateOccurred = player.update()
+        e1.update(playerUpdateOccurred, player)
 
         # Start the Render cycle by clearing the char buffer
         terminal.clear_buffer()
 
         levelOne.render()
 
-        ecoords = levelOne.world_coord_to_screen_cord(e1.pos)
-
-        terminal.draw_content(e1.content, *ecoords.getCoords())
-
         player.render()
+        e1.render()
 
         # Complete the Render cycle by printing the char buffer to the screen
         terminal.render_buffer()

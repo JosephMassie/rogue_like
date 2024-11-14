@@ -1,6 +1,8 @@
 import pygame
 from enum import Enum
 
+from utils.constants import *
+
 class KeyState(Enum):
     PRESSED = 0
     IDLE = 1
@@ -10,7 +12,7 @@ type KeyStateList = dict[int, KeyState]
 
 class Keyboard():
     def __init__(self) -> None:
-        pygame.key.set_repeat(150)
+        pygame.key.set_repeat(KEY_REPEAT)
         self._state = dict()
     
     def update(self) -> None:
