@@ -174,18 +174,19 @@ class Terminal():
         self.draw_content(spr.content, *spr.pos.getCoords())
 
     # clear screen and render newly provided content
-    def render_buffer(self) -> None:
+    def render_buffer(self, showBorder: bool = False) -> None:
         self._screen.fill(self._bg_color)
         
         ## Borders to draw for debugging
-        """ r = pygame.Rect(self._screen_width-self._gap, self._gap, self._gap, self._screen_height - self._gap*2)
-        r2 = pygame.Rect(self._gap, 0, self._screen_width-self._gap*2, self._gap)
-        r3 = pygame.Rect(0, self._gap, self._gap, self._screen_height-self._gap*2)
-        r4 = pygame.Rect(self._gap, self._screen_height-self._gap, self._screen_width-self._gap*2, self._gap)
-        pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r)
-        pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r2)
-        pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r3)
-        pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r4) """
+        if showBorder == True:
+            r = pygame.Rect(self._screen_width-self._gap, self._gap, self._gap, self._screen_height - self._gap*2)
+            r2 = pygame.Rect(self._gap, 0, self._screen_width-self._gap*2, self._gap)
+            r3 = pygame.Rect(0, self._gap, self._gap, self._screen_height-self._gap*2)
+            r4 = pygame.Rect(self._gap, self._screen_height-self._gap, self._screen_width-self._gap*2, self._gap)
+            pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r)
+            pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r2)
+            pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r3)
+            pygame.draw.rect(self._screen, pygame.Color(0, 100, 100), r4)
 
         for y in range(len(self._content)):
             line = self._content[y]

@@ -1,6 +1,7 @@
-#! ./.venv/bin/python3.12
+#! ./.env/bin/python3.13
 import pygame, sys
 from pygame.locals import *
+from string import Template
 
 from term import *
 from world import *
@@ -53,6 +54,7 @@ def main():
         terminal.render_buffer()
 
         deltaT = CLOCK.tick(MAX_FPS) / MS_IN_S
+        print(Template("deltaT: ${dT}s").safe_substitute(dT=deltaT))
 
 if __name__ == "__main__":
     main()
