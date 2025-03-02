@@ -30,7 +30,7 @@ class Player():
     
     def move(self, delta: Int_Vector):
         pos = self._position + delta
-        if not self._level.is_passable(pos):
+        if self._level.is_passable(pos) == False:
             return
         self._position = pos
     
@@ -38,17 +38,16 @@ class Player():
     #  returns true if any state was updated and false otherwise
     def update(self) -> bool:
         directions = [
-            (pygame.K_UP, (0, -1)),
-            (pygame.K_DOWN, (0, 1)),
-            (pygame.K_LEFT, (-1, 0)),
-            (pygame.K_RIGHT, (1, 0))
+            (pygame.K_UP, UP),
+            (pygame.K_DOWN, DOWN),
+            (pygame.K_LEFT, LEFT),
+            (pygame.K_RIGHT, RIGHT)
         ]
 
         updateOccurred = False
         for key, dir in directions:
             if self._keyboard.pressed(key):
-                delta = Int_Vector(*dir)
-                self.move(delta)
+                self.move(dir)
                 updateOccurred = True
 
         screen_pos = self._level.world_coord_to_screen_cord(self._position)

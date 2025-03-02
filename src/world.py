@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from term import *
-from utils.int_vect import Int_Vector
+from utils.int_vect import *
 from utils.input import Keyboard
+from utils.graph import Graph
 
 from enum import *
 
@@ -60,10 +61,12 @@ class Cell():
                 char = " "
                 type = CellType.EMPTY
                 colors = (DEFAULT_BG_COLOR, DEFAULT_FG_COLOR)
+                passable = False
             case _:
                 print(f"creating Cell from unknown character '{char}'")
                 type = CellType.EMPTY
-                colors = (DEFAULT_BG_COLOR, DEFAULT_FG_COLOR)
+                colors = (pygame.Color("#ff00ff"), DEFAULT_FG_COLOR)
+                passable = False
         return Cell(char, type, colors, passable)
 
 type WorldGrid = list[list[Cell]]
@@ -78,10 +81,9 @@ class World():
         self._term = term
         self._keyboard = keyboard
         
+        self._graph = Graph[Coords]()
         self._build_from_file(filePath)
-        self._height = len(self._grid)
-        self._width = get_2d_grid_width(self._grid)
-        self._camera_pos = Int_Vector(0, 0)
+        self._camera_pos = self.get_player_spawn()
     
     def _build_from_file(self, filePath: str):
         with open(filePath) as file:
@@ -95,9 +97,29 @@ class World():
                     char = line[x]
                     cell = Cell.from_character(char)
                     row.append(cell)
+                    # set player spawn to the most recently found START Cell
                     if cell._type == CellType.START:
                         self._player_spawn = Int_Vector(x, y)
+                    # start constructing a graph of all traversible Cells for navigation
+                    if cell.passable:
+                        self._graph.addNode((x, y))
                 self._grid.append(row)
+
+        self._height = len(self._grid)
+        self._width = get_2d_grid_width(self._grid)
+        # now that the main grid and graph nodes have been added traverse the grid to
+        # build connections in the graph
+        for y in range(len(self._grid)):
+            col = self._grid[y]
+            for x in range(len(col)):
+                if not col[x].passable:
+                    continue
+                pos = Int_Vector(x, y)
+                for dir in ALL_DIRECTIONS:
+                    npos = pos + dir
+                    if self.is_passable(npos):
+                        self._graph.addConnection(pos.getCoords(), npos.getCoords(), 1)
+
     
     def get_player_spawn(self) -> Int_Vector:
         if isinstance(self._player_spawn, Int_Vector):
@@ -105,11 +127,16 @@ class World():
         else:
             return Int_Vector(1, 1)
     
-    def is_passable(self, position: Int_Vector) -> CellType:
+    def getCell(self, position: Int_Vector) -> Cell | None:
         x, y = position.getCoords()
         if x < 0 or x >= self._width or y < 0 or y >= self._height:
-            return False
-        return self._grid[y][x].passable
+            print(f"attempting to access invalid cell @ {position}")
+            return None
+        return self._grid[y][x]
+    
+    def is_passable(self, position: Int_Vector) -> bool:
+        Cell = self.getCell(position)
+        return False if Cell == None else Cell.passable
 
     def move_camera(self, direction: Int_Vector) -> None:
         self._camera_pos = self._camera_pos + direction
@@ -122,16 +149,15 @@ class World():
     
     def update(self) -> None:
         directions = [
-            (pygame.K_w, (0, -1)),
-            (pygame.K_a, (-1, 0)),
-            (pygame.K_s, (0, 1)),
-            (pygame.K_d, (1, 0))
+            (pygame.K_w, UP),
+            (pygame.K_a, LEFT),
+            (pygame.K_s, DOWN),
+            (pygame.K_d, RIGHT)
         ]
 
         for key, dir in directions:
             if self._keyboard.pressed(key):
-                delta = Int_Vector(*dir)
-                self.move_camera(delta)
+                self.move_camera(dir)
     
     def _grid_to_content_for_camera(self) -> TermContent:
         screen_width = self._term.get_width()
@@ -175,3 +201,7 @@ class World():
     
     def world_coord_to_screen_cord(self, position: Int_Vector) -> Int_Vector:
         return position - self._camera_pos
+    
+    def getPath(self, start: Int_Vector, end: Int_Vector) -> list[Int_Vector] | None:
+        path = self._graph.find_path(start.getCoords(), end.getCoords())
+        return list(map(lambda coords: Int_Vector(*coords), path))

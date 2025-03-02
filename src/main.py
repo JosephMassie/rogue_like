@@ -1,7 +1,6 @@
 #! ./.env/bin/python3.13
 import pygame, sys
 from pygame.locals import *
-from string import Template
 
 from term import *
 from world import *
@@ -24,7 +23,7 @@ def main():
     levelOne = World("./assets/level_test.txt", terminal, keyboard)
     player = Player(levelOne.get_player_spawn(), terminal, levelOne, keyboard)
 
-    e1 = Enemy("g", (None, pygame.Color("#ce0808")), Int_Vector(10, 10), terminal, levelOne)
+    e1 = Enemy("g", (None, pygame.Color("#ce0808")), Int_Vector(10, 10), terminal, levelOne, player)
 
     deltaT = 0
     while True:
@@ -40,7 +39,7 @@ def main():
         
         levelOne.update()
         playerUpdateOccurred = player.update()
-        e1.update(playerUpdateOccurred, player)
+        e1.update(playerUpdateOccurred)
 
         # Start the Render cycle by clearing the char buffer
         terminal.clear_buffer()
@@ -54,7 +53,7 @@ def main():
         terminal.render_buffer()
 
         deltaT = CLOCK.tick(MAX_FPS) / MS_IN_S
-        print(Template("deltaT: ${dT}s").safe_substitute(dT=deltaT))
+        #print(f"deltaT: {deltaT}s")
 
 if __name__ == "__main__":
     main()
