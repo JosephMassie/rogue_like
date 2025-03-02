@@ -50,4 +50,25 @@ class Player():
                 delta = Int_Vector(*dir)
                 self.move(delta)
                 updateOccurred = True
+
+        screen_pos = self._level.world_coord_to_screen_cord(self._position)
+        x, y = screen_pos.getCoords()
+        screen_width = self._term.get_width() - PLAYER_SCREEN_BUFFER
+        screen_height = self._term.get_height() - PLAYER_SCREEN_BUFFER
+
+        camera_velocity = Int_Vector(0, 0)
+
+        # if the player moves out of bounds on the screen adjust the camera
+        if x < PLAYER_SCREEN_BUFFER:
+            camera_velocity += Int_Vector(-1, 0)
+        elif x > screen_width:
+            camera_velocity += Int_Vector(1, 0)
+        
+        if y < PLAYER_SCREEN_BUFFER:
+            camera_velocity += Int_Vector(0, -1)
+        elif y > screen_height:
+            camera_velocity += Int_Vector(0, 1)
+        
+        self._level.move_camera(camera_velocity)
+
         return updateOccurred
